@@ -18,14 +18,31 @@ import {
   CheckCircle2,
   Siren,
   Coins,
-  Brain
+  Brain,
+  Globe,
+  Terminal,
+  Cpu,
+  Layers
 } from 'lucide-react';
 import { getHistory } from '../services/api';
 import RiskBadge from '../components/RiskBadge';
+import SocThreatMap from '../components/SocThreatMap';
+import MitreMatrixGrid from '../components/MitreMatrixGrid';
+import SocTimelineGraph from '../components/SocTimelineGraph';
+import SocAlertFeed from '../components/SocAlertFeed';
 
 export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, setToolTab }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
+
+  // Real-time ticking clock for SOC operations
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toUTCString());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -49,44 +66,57 @@ export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, s
   // Calculate dynamic Cyber Posture Score
   const healthScore = total === 0 ? 100 : Math.max(100 - (critical * 15 + high * 8), 45);
 
-  const handleOpenReport = (id) => {
-    if (setReportId) setReportId(id);
-    setActivePage('report');
-  };
-
-  const handleQuickAnalyze = (tab) => {
-    if (setAnalyzeTab) setAnalyzeTab(tab);
-    setActivePage('analyze');
-  };
+  const defconLevel = critical > 0 ? 'DEFCON 2: ELEVATED THREAT ENVIRONMENT' : high > 0 ? 'DEFCON 3: ACTIVE MONITORING' : 'DEFCON 4: NORMAL OPERATIONS';
+  const defconColor = critical > 0 ? 'text-rose-400 bg-rose-950/60 border-rose-800' : high > 0 ? 'text-amber-400 bg-amber-950/60 border-amber-800' : 'text-emerald-400 bg-emerald-950/60 border-emerald-800';
 
   return (
     <div className="space-y-8 py-6 max-w-7xl mx-auto px-4">
-      {/* Dashboard Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* SOC Command Header & Live Telemetry Ticker */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold mb-2">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Autonomous Cyber Defense Center</span>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className={`px-2.5 py-0.5 rounded-full border text-xs font-mono font-black uppercase flex items-center space-x-1.5 ${defconColor}`}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+              </span>
+              <span>{defconLevel}</span>
+            </span>
+
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+              UTC: {currentTime}
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Security Command Dashboard</h1>
+
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
+            Security Operations Center (SOC)
+          </h1>
           <p className="text-xs sm:text-sm opacity-70 mt-1">
-            Real-time telemetry of your personal threat exposure, security hygiene, and defensive tools.
+            Real-time SIEM event correlation, adversarial threat mapping, MITRE ATT&CK alignment, and automated AI countermeasures.
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* SOC Action Bar */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActivePage('arena')}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-all flex items-center space-x-1.5"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all flex items-center space-x-1.5"
           >
-            <Swords className="w-3.5 h-3.5 text-cyan-400" />
+            <Swords className="w-4 h-4 text-cyan-400" />
             <span>Cyber Arena</span>
           </button>
           <button
-            onClick={() => setActivePage('analyze')}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/20 flex items-center space-x-1.5"
+            onClick={() => setActivePage('radar')}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all flex items-center space-x-1.5"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Radio className="w-4 h-4 text-rose-400" />
+            <span>Threat Radar</span>
+          </button>
+          <button
+            onClick={() => setActivePage('analyze')}
+            className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 flex items-center space-x-1.5"
+          >
+            <Search className="w-4 h-4" />
             <span>New Threat Scan</span>
           </button>
         </div>
@@ -101,212 +131,198 @@ export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, s
             </div>
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-bold">Personal Cyber Health Posture</h2>
-            <p className="text-xs opacity-70 max-w-md">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg font-bold">Personal Cyber Health Posture</h2>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
+                SIEM INDEX
+              </span>
+            </div>
+            <p className="text-xs opacity-70 max-w-xl">
               {healthScore >= 85
-                ? 'Your cybersecurity hygiene is in excellent standing. Threat detection and proactive defense are fully active.'
-                : 'Attention needed: You have recently encountered high-risk attack vectors. Follow the recommended protection steps.'}
+                ? 'Your cybersecurity hygiene is in optimal standing. Autonomous threat detection, safe URL sandboxing, and MITRE mitigations are fully active.'
+                : 'Attention needed: You have recently encountered high-severity attack vectors. Review uncontained incidents in the SIEM alert queue.'}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Safe Browsing Active</span>
+            <span>Ingestion Pipeline: Healthy</span>
           </span>
-          <span className="flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-            <Zap className="w-3.5 h-3.5" />
-            <span>AI Reasoning Online</span>
+          <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <Cpu className="w-3.5 h-3.5" />
+            <span>AI Reasoning: Online</span>
           </span>
         </div>
       </div>
 
-      {/* Metric Cards Grid */}
+      {/* Metric Telemetry Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl cyber-card border space-y-2">
           <div className="flex items-center justify-between opacity-70">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Scans Run</span>
+            <span className="text-xs font-semibold uppercase tracking-wider font-mono">Total Ingested Events</span>
             <Activity className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-3xl font-extrabold">{loading ? '...' : total}</div>
-          <p className="text-xs opacity-60">Messages, URLs, images & audio</p>
+          <p className="text-xs opacity-60">Messages, URLs, docs, audio, & Web3</p>
         </div>
 
         <div className="p-5 rounded-2xl cyber-card border space-y-2">
           <div className="flex items-center justify-between opacity-70">
-            <span className="text-xs font-semibold uppercase tracking-wider">Critical Threats</span>
+            <span className="text-xs font-semibold uppercase tracking-wider font-mono">Critical Exploits</span>
             <Flame className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-3xl font-extrabold text-rose-400">{loading ? '...' : critical}</div>
-          <p className="text-xs opacity-60">Intercepted credential theft attempts</p>
+          <p className="text-xs opacity-60">Intercepted credential theft & drainers</p>
         </div>
 
         <div className="p-5 rounded-2xl cyber-card border space-y-2">
           <div className="flex items-center justify-between opacity-70">
-            <span className="text-xs font-semibold uppercase tracking-wider">High Risk Alerts</span>
+            <span className="text-xs font-semibold uppercase tracking-wider font-mono">High Risk Incursions</span>
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-3xl font-extrabold text-amber-400">{loading ? '...' : high}</div>
-          <p className="text-xs opacity-60">Phishing links and scam lures</p>
+          <p className="text-xs opacity-60">Phishing lures, fake invoices, & quishing</p>
         </div>
 
         <div className="p-5 rounded-2xl cyber-card border space-y-2">
           <div className="flex items-center justify-between opacity-70">
-            <span className="text-xs font-semibold uppercase tracking-wider">Safe Checks</span>
+            <span className="text-xs font-semibold uppercase tracking-wider font-mono">Verified Clean</span>
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-3xl font-extrabold text-emerald-400">{loading ? '...' : safe}</div>
-          <p className="text-xs opacity-60">Verified without threat signals</p>
+          <p className="text-xs opacity-60">Verified without threat signatures</p>
         </div>
       </div>
 
-      {/* Main Grid: Recent Activity & Arsenal Launcher */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Checks List */}
-        <div className="lg:col-span-2 cyber-card rounded-2xl p-6 border space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-700/40">
-            <h3 className="text-base font-bold flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-cyan-400" />
-              <span>Recent Security Checks</span>
-            </h3>
-            <button
-              onClick={() => setActivePage('history')}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center space-x-1"
-            >
-              <span>View All History</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {/* Interactive SIEM Telemetry Curve Graph */}
+      <SocTimelineGraph />
 
-          {loading ? (
-            <div className="py-8 text-center text-sm font-mono opacity-50">Loading analyses...</div>
-          ) : history.length === 0 ? (
-            <div className="py-8 text-center text-sm opacity-60">
-              No analyses recorded yet. Scan your first message or URL!
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-700/40">
-              {history.slice(0, 5).map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleOpenReport(item.id)}
-                  className="py-3 flex items-center justify-between hover:bg-slate-800/30 px-2 rounded-xl transition-colors cursor-pointer group"
-                >
-                  <div className="space-y-1 min-w-0 pr-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 opacity-80">
-                        {item.input_type}
-                      </span>
-                      <h4 className="text-sm font-semibold group-hover:text-cyan-400 transition-colors truncate">
-                        {item.threat_type}
-                      </h4>
-                    </div>
-                    <p className="text-xs opacity-60 truncate max-w-md">
-                      {item.source_preview || item.explanation}
-                    </p>
-                  </div>
+      {/* Interactive Global Threat Map & Adversary Dossier */}
+      <SocThreatMap />
 
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <RiskBadge risk={item.risk} size="sm" />
-                    <span className="text-xs font-mono opacity-60 hidden sm:inline">
-                      {item.score}/100
-                    </span>
-                    <ArrowRight className="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:text-cyan-400 transition-all" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* MITRE ATT&CK Matrix Grid */}
+      <MitreMatrixGrid />
+
+      {/* Live SIEM Alert Triage Queue */}
+      <SocAlertFeed
+        history={history}
+        setActivePage={setActivePage}
+        setReportId={setReportId}
+        setToolTab={setToolTab}
+      />
+
+      {/* SOC Defense Arsenal Launcher */}
+      <div className="cyber-card rounded-3xl p-6 sm:p-8 space-y-4 border">
+        <div className="flex items-center space-x-2">
+          <Zap className="w-5 h-5 text-cyan-400" />
+          <h3 className="text-lg font-bold">Active SOC Defense Countermeasure Tools</h3>
         </div>
-
-        {/* Cyber Defense Arsenal Launcher */}
-        <div className="space-y-4">
-          <div className="cyber-card rounded-2xl p-6 border space-y-4">
-            <h3 className="text-base font-bold flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-cyan-400" />
-              <span>Cyber Defense Tools</span>
-            </h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => { if (setToolTab) setToolTab('incident'); setActivePage('tools'); }}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-rose-950/30 text-left border border-slate-800 hover:border-rose-800/60 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
-                  <Siren className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Incident Commander</span>
-                  <span className="text-[11px] opacity-60">Bank dispute & police legal draft</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => { if (setToolTab) setToolTab('breach'); setActivePage('tools'); }}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800/60 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
-                  <Search className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Dark Web Breach Radar</span>
-                  <span className="text-[11px] opacity-60">Compromised identity & stuffing</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => { if (setToolTab) setToolTab('crypto'); setActivePage('tools'); }}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-amber-950/30 text-left border border-slate-800 hover:border-amber-800/60 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 group-hover:scale-105 transition-transform">
-                  <Coins className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Web3 & Crypto Audit</span>
-                  <span className="text-[11px] opacity-60">Permit2 drainer & smart contract</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => { if (setToolTab) setToolTab('psych'); setActivePage('tools'); }}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-purple-950/30 text-left border border-slate-800 hover:border-purple-800/60 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 group-hover:scale-105 transition-transform">
-                  <Brain className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Psychology Radar</span>
-                  <span className="text-[11px] opacity-60">Cialdini persuasion spectrum</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => { if (setToolTab) setToolTab('password'); setActivePage('tools'); }}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Password Sentinel</span>
-                  <span className="text-[11px] opacity-60">Entropy & crack-time audit</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActivePage('radar')}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-rose-950/40 text-left border border-slate-800 hover:border-rose-800 transition-all flex items-center space-x-3 group"
-              >
-                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
-                  <Radio className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Live Threat Radar</span>
-                  <span className="text-[11px] opacity-60">Active fraud campaigns & voice clones</span>
-                </div>
-              </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => { if (setToolTab) setToolTab('incident'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-rose-950/40 text-left border border-slate-800 hover:border-rose-800/60 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
+              <Siren className="w-4 h-4" />
             </div>
-          </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Incident Commander</span>
+              <span className="text-[11px] opacity-60">Bank dispute & police legal draft</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('breach'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800/60 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
+              <Search className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Dark Web Breach Radar</span>
+              <span className="text-[11px] opacity-60">Compromised identity & stuffing</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('crypto'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-amber-950/40 text-left border border-slate-800 hover:border-amber-800/60 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 group-hover:scale-105 transition-transform">
+              <Coins className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Web3 & Crypto Audit</span>
+              <span className="text-[11px] opacity-60">Permit2 drainer & smart contract</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('psych'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-purple-950/40 text-left border border-slate-800 hover:border-purple-800/60 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 group-hover:scale-105 transition-transform">
+              <Brain className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Psychology Radar</span>
+              <span className="text-[11px] opacity-60">Cialdini persuasion spectrum</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('password'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
+              <KeyRound className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Password Sentinel</span>
+              <span className="text-[11px] opacity-60">Entropy & crack-time audit</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('header'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-blue-950/40 text-left border border-slate-800 hover:border-blue-800 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400 group-hover:scale-105 transition-transform">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Header Sentry</span>
+              <span className="text-[11px] opacity-60">SPF/DKIM email spoof check</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => { if (setToolTab) setToolTab('qr'); setActivePage('tools'); }}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/40 text-left border border-slate-800 hover:border-emerald-800 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
+              <QrCode className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Quishing Scanner</span>
+              <span className="text-[11px] opacity-60">QR code phishing inspector</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActivePage('radar')}
+            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-rose-950/40 text-left border border-slate-800 hover:border-rose-800 transition-all flex items-center space-x-3 group"
+          >
+            <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
+              <Radio className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold block text-slate-100">Live Threat Radar</span>
+              <span className="text-[11px] opacity-60">Active fraud campaigns & AI clones</span>
+            </div>
+          </button>
         </div>
       </div>
     </div>

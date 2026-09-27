@@ -115,6 +115,21 @@ export const auditCrypto = async (payload) => {
   return response.data;
 };
 
+export const generateHoneypotReply = async (scam_text, persona = 'elderly') => {
+  const response = await client.post('/tools/honeypot-reply', { scam_text, persona });
+  return response.data;
+};
+
+export const runAdversarialAudit = async (threat_text, threat_type = 'Phishing') => {
+  const response = await client.post('/tools/adversarial-audit', { threat_text, threat_type });
+  return response.data;
+};
+
+export const scanCveIntel = async (query) => {
+  const response = await client.post('/tools/cve-scanner', { query });
+  return response.data;
+};
+
 export default {
   checkHealth,
   analyzeText,
@@ -134,4 +149,7 @@ export default {
   auditPsychProfile,
   checkBreach,
   auditCrypto,
+  generateHoneypotReply,
+  runAdversarialAudit,
+  scanCveIntel,
 };

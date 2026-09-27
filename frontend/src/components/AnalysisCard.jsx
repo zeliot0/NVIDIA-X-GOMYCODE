@@ -6,6 +6,7 @@ import IndicatorList from './IndicatorList';
 import ProtectionPlan from './ProtectionPlan';
 import AudioVoiceBriefing from './AudioVoiceBriefing';
 import PsychProfileCard from './PsychProfileCard';
+import AdversarialAuditCard from './AdversarialAuditCard';
 
 export default function AnalysisCard({ analysis, inputType = 'message', recordId, sourceText = '' }) {
   const [copied, setCopied] = useState(false);
@@ -145,6 +146,12 @@ Analyzed safely by SAFEAI (Personal Cybersecurity Assistant)`;
       <PsychProfileCard
         text={sourceText || transcript || explanation}
         initialProfile={analysis.psych_profile}
+      />
+
+      {/* Adversarial Simulation: Red Team vs. Blue Team */}
+      <AdversarialAuditCard
+        threatText={sourceText || transcript || explanation}
+        threatType={threat_type}
       />
 
       {/* Indicators */}

@@ -22,7 +22,11 @@ import {
   ExternalLink,
   ShieldCheck,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Bot,
+  Bug,
+  Terminal,
+  Cpu
 } from 'lucide-react';
 import {
   auditPassword,
@@ -31,7 +35,9 @@ import {
   generateIncidentResponse,
   checkBreach,
   auditCrypto,
-  auditPsychProfile
+  auditPsychProfile,
+  generateHoneypotReply,
+  scanCveIntel
 } from '../services/api';
 import UploadBox from '../components/UploadBox';
 import RiskBadge from '../components/RiskBadge';
@@ -291,8 +297,63 @@ Authentication-Results: mx.google.com; dkim=pass header.i=@google.com; spf=pass 
     return 'from-emerald-500 to-teal-500';
   };
 
+  // ----------------------------------------------------
+  // Tool 8: Scambaiter Honeypot Bot State
+  // ----------------------------------------------------
+  const [honeypotText, setHoneypotText] = useState('URGENT: Your Bank of America online access has been restricted due to 3 unauthorized login attempts. Click here immediately to verify your SSN and card PIN: http://secure-boa-auth-update.com');
+  const [honeypotPersona, setHoneypotPersona] = useState('elderly');
+  const [honeypotLoading, setHoneypotLoading] = useState(false);
+  const [honeypotResult, setHoneypotResult] = useState(null);
+
+  const handleRunHoneypot = async () => {
+    if (!honeypotText.trim() || honeypotLoading) return;
+    setHoneypotLoading(true);
+    try {
+      const data = await generateHoneypotReply(honeypotText, honeypotPersona);
+      setHoneypotResult(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setHoneypotLoading(false);
+    }
+  };
+
+  const loadHoneypotSample = (personaKey) => {
+    setHoneypotPersona(personaKey);
+    if (personaKey === 'elderly') {
+      setHoneypotText('Dear customer, your bank security credentials have expired. Reply immediately with your full name, mother maiden name, and ATM PIN to prevent permanent account freezing.');
+    } else if (personaKey === 'accountant') {
+      setHoneypotText('OVERDUE INVOICE #94821: $8,450.00 is due immediately for cloud server licensing. Remit payment to our wire coordinates or legal action will be initiated within 24 hours.');
+    } else if (personaKey === 'crypto_novice') {
+      setHoneypotText('CONGRATULATIONS! You won the exclusive Arbitrum 5,000 ARB community airdrop! Connect your wallet and approve the token claim transaction before allocation expires in 30 minutes.');
+    }
+  };
+
+  // ----------------------------------------------------
+  // Tool 9: Zero-Day & CVE Sentinel State
+  // ----------------------------------------------------
+  const [cveQuery, setCveQuery] = useState('log4j');
+  const [cveLoading, setCveLoading] = useState(false);
+  const [cveResult, setCveResult] = useState(null);
+
+  const handleScanCve = async (overrideQuery) => {
+    const q = overrideQuery || cveQuery;
+    if (!q.trim() || cveLoading) return;
+    setCveLoading(true);
+    try {
+      const data = await scanCveIntel(q);
+      setCveResult(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCveLoading(false);
+    }
+  };
+
   const toolTabs = [
     { id: 'incident', label: 'Incident Commander', icon: Siren, tag: 'Emergency' },
+    { id: 'honeypot', label: 'Scambaiter Honeypot', icon: Bot, tag: 'Counter-Trap' },
+    { id: 'cve', label: 'Zero-Day & CVE Sentinel', icon: Bug, tag: 'Exploit Intel' },
     { id: 'breach', label: 'Dark Web Breach', icon: Search, tag: 'Intelligence' },
     { id: 'crypto', label: 'Web3 & Crypto Audit', icon: Coins, tag: 'Smart Contracts' },
     { id: 'psych', label: 'Psychology Radar', icon: Brain, tag: 'Social Eng.' },
@@ -1336,6 +1397,318 @@ Authentication-Results: mx.google.com; dkim=pass header.i=@google.com; spf=pass 
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TOOL 8: SCAMBAITER HONEYPOT COUNTER-DECEPTION BOT   */}
+      {/* ---------------------------------------------------- */}
+      {activeTool === 'honeypot' && (
+        <div className="space-y-6">
+          <div className="cyber-card rounded-3xl p-6 sm:p-8 space-y-6 border">
+            <div className="flex items-center space-x-3">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <Bot className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Autonomous Scambaiter & Counter-Deception Honeypot</h3>
+                <p className="text-xs opacity-70">
+                  Safely string scammers along, waste their operational time, and lure them into disclosing illicit drop bank accounts, wire routes, or crypto addresses.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Demo Preloads */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="opacity-60">Preload Persona Bait:</span>
+              <button
+                onClick={() => loadHoneypotSample('elderly')}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-750 transition-colors"
+              >
+                👵 Dorothy (Confused Senior)
+              </button>
+              <button
+                onClick={() => loadHoneypotSample('accountant')}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-slate-750 transition-colors"
+              >
+                👔 Arthur (Corporate Accounts Clerk)
+              </button>
+              <button
+                onClick={() => loadHoneypotSample('crypto_novice')}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-purple-300 border border-slate-700 hover:bg-slate-750 transition-colors"
+              >
+                🚀 Jordan (FOMO Web3 Trader)
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                  Select Decoy Baiting Persona:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: 'elderly', title: 'Grandma Dorothy', sub: 'Confused Senior, technologically naive, highly cooperative decoy' },
+                    { id: 'accountant', title: 'Arthur Pendelton', sub: 'Corporate Auditor, insists on escrow, VAT ID & corporate bank verification' },
+                    { id: 'crypto_novice', title: 'Jordan (FOMO Degenerate)', sub: 'Web3 Novice, eager to send ETH but claims wallet RPC error' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setHoneypotPersona(p.id)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        honeypotPersona === p.id
+                          ? 'border-amber-400/80 bg-amber-500/10 shadow-md ring-1 ring-amber-400/30'
+                          : 'border-slate-800 bg-slate-900/50 hover:bg-slate-800/40 opacity-70'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-slate-100">{p.title}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{p.sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                  Scam Message / Phishing Lure Received:
+                </label>
+                <textarea
+                  rows={4}
+                  value={honeypotText}
+                  onChange={(e) => setHoneypotText(e.target.value)}
+                  placeholder="Paste the suspicious email, SMS, or Telegram chat received from the scammer..."
+                  className="w-full p-4 rounded-xl border border-slate-700/60 bg-slate-900/60 text-sm focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleRunHoneypot}
+                  disabled={honeypotLoading || !honeypotText.trim()}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center space-x-2"
+                >
+                  <Bot className="w-4 h-4" />
+                  <span>{honeypotLoading ? 'Synthesizing Decoy Response...' : 'Generate Scambaiter Decoy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Honeypot Output */}
+            {honeypotResult && (
+              <div className="pt-6 border-t border-slate-700/40 space-y-6">
+                {/* Persona Profile Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-950/20 border border-amber-900/40">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-amber-400 font-bold tracking-wider">Active Decoy Persona</span>
+                    <h4 className="text-sm font-bold text-amber-200">{honeypotResult.persona_name}</h4>
+                    <p className="text-xs text-amber-300/80">Tone: {honeypotResult.persona_tone}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-amber-900/30 text-xs text-slate-300 max-w-md">
+                    <strong className="text-amber-400 block text-[11px] mb-0.5">Psychological Trap Strategy:</strong>
+                    {honeypotResult.strategy}
+                  </div>
+                </div>
+
+                {/* Ready-to-Send Decoy Counter-Reply */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-300">
+                      <Sparkles className="w-4 h-4" />
+                      <span>Ready-to-Copy Decoy Response</span>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(honeypotResult.counter_reply, 'honeypot')}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center space-x-1.5 transition-all"
+                    >
+                      {copiedKey === 'honeypot' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'honeypot' ? 'Copied to Clipboard' : 'Copy Response'}</span>
+                    </button>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-slate-950 border border-amber-500/30 text-sm font-sans text-slate-100 leading-relaxed shadow-inner shadow-black/50">
+                    "{cleanText(honeypotResult.counter_reply)}"
+                  </div>
+                </div>
+
+                {/* Intelligence Extraction Objective */}
+                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+                  <span className="text-[10px] uppercase font-mono text-cyan-400 font-bold">Adversary Intelligence Extraction Goal</span>
+                  <p className="text-xs text-slate-300">
+                    🎯 {honeypotResult.trap_objective}
+                  </p>
+                </div>
+
+                {/* Safety & OPSEC Warnings */}
+                {honeypotResult.safety_warnings && honeypotResult.safety_warnings.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase font-mono text-rose-400 font-bold">Counter-Deception Safety Protocols (OPSEC)</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {honeypotResult.safety_warnings.map((warn, i) => (
+                        <div key={i} className="flex items-center space-x-2 text-xs p-3 rounded-xl bg-rose-950/20 border border-rose-900/40 text-rose-200">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                          <span>{warn}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TOOL 9: ZERO-DAY & CVE VULNERABILITY SENTINEL        */}
+      {/* ---------------------------------------------------- */}
+      {activeTool === 'cve' && (
+        <div className="space-y-6">
+          <div className="cyber-card rounded-3xl p-6 sm:p-8 space-y-6 border">
+            <div className="flex items-center space-x-3">
+              <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                <Bug className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Zero-Day & CVE Vulnerability Intelligence Sentinel</h3>
+                <p className="text-xs opacity-70">
+                  Instant vulnerability intelligence, EPSS weaponization velocity scores, CISA KEV exploitation records, and remediation playbooks.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Demo Preloads */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="opacity-60">Preload Intel Query:</span>
+              <button
+                onClick={() => { setCveQuery('log4j'); handleScanCve('log4j'); }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-rose-300 border border-slate-700 hover:bg-slate-750 font-mono transition-colors"
+              >
+                Log4Shell (CVE-2021-44228)
+              </button>
+              <button
+                onClick={() => { setCveQuery('outlook'); handleScanCve('outlook'); }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-750 font-mono transition-colors"
+              >
+                Outlook Zero-Click (CVE-2023-23397)
+              </button>
+              <button
+                onClick={() => { setCveQuery('openssl'); handleScanCve('openssl'); }}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-slate-750 font-mono transition-colors"
+              >
+                Heartbleed (CVE-2014-0160)
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                <input
+                  type="text"
+                  value={cveQuery}
+                  onChange={(e) => setCveQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleScanCve()}
+                  placeholder="Enter software name, library, or CVE identifier (e.g., CVE-2024-38063, Log4j, OpenSSH)..."
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-700/60 bg-slate-900/60 text-sm focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+              <button
+                onClick={() => handleScanCve()}
+                disabled={cveLoading || !cveQuery.trim()}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center space-x-2"
+              >
+                <Cpu className="w-4 h-4" />
+                <span>{cveLoading ? 'Scanning Feeds...' : 'Query Vulnerability Intel'}</span>
+              </button>
+            </div>
+
+            {/* CVE Result Display */}
+            {cveResult && (
+              <div className="pt-6 border-t border-slate-700/40 space-y-6">
+                {/* Result Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg font-mono font-black text-cyan-400">{cveResult.cve_identifier}</span>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        {cveResult.affected_ecosystem}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">{cveResult.vulnerability_type}</p>
+                  </div>
+                  <RiskBadge risk={cveResult.severity} size="lg" />
+                </div>
+
+                {/* Threat Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">CVSS v3.1 Severity</span>
+                    <div className="text-2xl font-black text-rose-400 font-mono">
+                      {cveResult.cvss_score} <span className="text-xs font-normal text-slate-400">/ 10.0</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">Severity Tier: {cveResult.severity}</div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">EPSS Weaponization Probability</span>
+                    <div className="text-2xl font-black text-amber-400 font-mono">
+                      {cveResult.epss_probability}
+                    </div>
+                    <div className="text-[11px] text-slate-400">Exploit Prediction Scoring System</div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+                    <span className="text-[10px] uppercase font-mono text-slate-400">CISA KEV Exploitation Status</span>
+                    <div className="flex items-center space-x-2 pt-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                      <span className="text-sm font-bold text-rose-300">{cveResult.cisa_kev_status}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">Active In-The-Wild Threat</div>
+                  </div>
+                </div>
+
+                {/* Technical Deep Dive */}
+                <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">Technical Root Cause Analysis</span>
+                  <p className="text-sm text-slate-300 leading-relaxed font-sans">
+                    {cveResult.technical_summary}
+                  </p>
+                </div>
+
+                {/* Exploit Vector Breakdown */}
+                <div className="p-5 rounded-2xl bg-slate-950 border border-rose-900/40 space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center space-x-2">
+                    <Terminal className="w-4 h-4" />
+                    <span>Adversary Exploit Vector</span>
+                  </span>
+                  <p className="text-xs font-mono text-rose-200 leading-relaxed bg-black/40 p-3 rounded-xl border border-rose-950">
+                    {cveResult.exploit_vector}
+                  </p>
+                </div>
+
+                {/* Patch & Remediation Guidance */}
+                <div className="p-5 rounded-2xl bg-emerald-950/20 border border-emerald-900/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Patch Guidance & Defense Hardening</span>
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(cveResult.patch_guidance, 'cve_patch')}
+                      className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 text-xs font-semibold flex items-center space-x-1.5 transition-all"
+                    >
+                      {copiedKey === 'cve_patch' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'cve_patch' ? 'Copied' : 'Copy Patch Plan'}</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-emerald-200 font-mono bg-black/30 p-3.5 rounded-xl border border-emerald-900/30 whitespace-pre-wrap">
+                    {cleanText(cveResult.patch_guidance)}
+                  </p>
+                </div>
               </div>
             )}
           </div>

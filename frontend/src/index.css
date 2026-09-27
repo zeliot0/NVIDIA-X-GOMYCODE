@@ -56,6 +56,29 @@ body.light .cyber-card h4 {
   box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.35);
 }
 
+/* SOC Grid Pattern Background */
+.soc-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+}
+
+/* Radar Sweep Animation */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar {
+  animation: radar-sweep 4s linear infinite;
+  transform-origin: center;
+}
+
 /* Print optimizations */
 @media print {
   .no-print {

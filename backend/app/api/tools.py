@@ -11,7 +11,10 @@ from app.services.ai_service import (
     generate_incident_response_with_ai,
     audit_psychological_triggers_with_ai,
     audit_crypto_web3_with_ai,
-    simulate_breach_check
+    simulate_breach_check,
+    generate_honeypot_reply_with_ai,
+    generate_adversarial_audit_with_ai,
+    query_cve_sentinel_with_ai
 )
 
 router = APIRouter(
@@ -109,3 +112,42 @@ async def crypto_audit_endpoint(payload: CryptoAuditRequest):
         return await audit_crypto_web3_with_ai(payload.payload)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Crypto AI error: {str(e)}")
+
+
+class HoneypotRequest(BaseModel):
+    scam_text: str = Field(..., min_length=5, max_length=10000, description="Incoming scam message to generate decoy counter-response for")
+    persona: Optional[str] = Field(default="elderly", description="Decoy persona (elderly, accountant, crypto_novice)")
+
+
+class AdversarialRequest(BaseModel):
+    threat_text: str = Field(..., min_length=5, max_length=15000, description="Threat payload or message to dissect from Red vs Blue perspectives")
+    threat_type: Optional[str] = Field(default="Phishing", description="Threat category")
+
+
+class CveScannerRequest(BaseModel):
+    query: str = Field(..., min_length=2, max_length=500, description="Software name, library, or CVE identifier")
+
+
+@router.post("/honeypot-reply", summary="Autonomous AI Scambaiter & Counter-Deception Honeypot Engine")
+async def honeypot_reply_endpoint(payload: HoneypotRequest):
+    try:
+        return await generate_honeypot_reply_with_ai(payload.scam_text, payload.persona)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Honeypot AI error: {str(e)}")
+
+
+@router.post("/adversarial-audit", summary="Red Team vs Blue Team Dual Adversary Simulation & MITRE ATT&CK Mapping")
+async def adversarial_audit_endpoint(payload: AdversarialRequest):
+    try:
+        return await generate_adversarial_audit_with_ai(payload.threat_text, payload.threat_type)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Adversarial AI error: {str(e)}")
+
+
+@router.post("/cve-scanner", summary="Zero-Day & CVE Vulnerability Intelligence Sentinel")
+async def cve_scanner_endpoint(payload: CveScannerRequest):
+    try:
+        return await query_cve_sentinel_with_ai(payload.query)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"CVE Sentinel error: {str(e)}")
+
