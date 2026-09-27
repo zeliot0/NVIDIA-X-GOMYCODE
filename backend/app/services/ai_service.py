@@ -48,18 +48,39 @@ Return your response as JSON with:
 """
 
 
+def _get_active_ai_provider():
+    """Detect whether Groq or OpenAI credentials are active."""
+    if settings.GROQ_API_KEY and len(settings.GROQ_API_KEY) > 10 and not settings.GROQ_API_KEY.startswith("your_"):
+        return {
+            "name": "groq",
+            "api_url": "https://api.groq.com/openai/v1/chat/completions",
+            "api_key": settings.GROQ_API_KEY,
+            "text_model": "openai/gpt-oss-20b",
+            "fallback_model": "qwen/qwen3.8-27b",
+        }
+    if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10 and not settings.OPENAI_API_KEY.startswith("your_"):
+        return {
+            "name": "openai",
+            "api_url": "https://api.openai.com/v1/chat/completions",
+            "api_key": settings.OPENAI_API_KEY,
+            "text_model": "gpt-4o-mini",
+            "fallback_model": "gpt-4o-mini",
+        }
+    return None
+
+
 async def analyze_text_with_ai(text: str, security_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Combines deterministic security signals with LLM deep semantic reasoning.
-    Falls back reliably to deterministic context if API key is not configured.
+    Combines deterministic security signals with LLM deep semantic reasoning (Groq or OpenAI).
+    Falls back reliably to deterministic context if API call fails or key is missing.
     """
     deterministic = security_context or analyze_text_security(text)
+    provider = _get_active_ai_provider()
 
-    if not settings.OPENAI_API_KEY or len(settings.OPENAI_API_KEY) < 10:
+    if not provider:
         return deterministic
 
-    try:
-        user_prompt = f"""Analyze this content for cybersecurity threats:
+    user_prompt = f"""Analyze this content for cybersecurity threats:
 Input Content:
 ---
 {text}
@@ -71,113 +92,87 @@ Deterministic Security Engine Findings:
 - Base Score: {deterministic.get('score')}
 """
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_SECURITY_AGENT_PROMPT},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.2
-                },
-                timeout=20.0
-            )
+    for model_name in [provider["text_model"], provider.get("fallback_model")]:
+        if not model_name:
+            continue
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(
+                    provider["api_url"],
+                    headers={
+                        "Authorization": f"Bearer {provider['api_key']}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_name,
+                        "messages": [
+                            {"role": "system", "content": SYSTEM_SECURITY_AGENT_PROMPT},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.2
+                    },
+                    timeout=20.0
+                )
 
-            if response.status_code == 200:
-                data = response.json()
-                parsed = json.loads(data["choices"][0]["message"]["content"])
-                parsed["indicator_details"] = deterministic.get("indicator_details", [])
-                return parsed
-    except Exception:
-        pass
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data["choices"][0]["message"]["content"]
+                    parsed = json.loads(content)
+                    parsed["indicator_details"] = deterministic.get("indicator_details", [])
+                    return parsed
+        except Exception as e:
+            print(f"Groq/AI text model {model_name} attempt error: {e}")
 
     return deterministic
 
 
 async def analyze_image_with_ai(image_bytes: bytes, mime_type: str) -> Dict[str, Any]:
     """
-    Analyzes screenshot using AI Vision to detect brand spoofing, fake login screens,
-    and deceptive popups.
+    Analyzes screenshot using AI Vision or visual heuristic analysis.
     """
-    b64_image = base64.b64encode(image_bytes).decode("utf-8")
-    data_uri = f"data:{mime_type};base64,{b64_image}"
-
-    if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10:
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "gpt-4o-mini",
-                        "messages": [
-                            {"role": "system", "content": SYSTEM_SECURITY_AGENT_PROMPT},
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": "Analyze this screenshot for phishing, fake login fields, brand spoofing, or scam popups."},
-                                    {"type": "image_url", "image_url": {"url": data_uri}}
-                                ]
-                            }
-                        ],
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0.2
-                    },
-                    timeout=25.0
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    return json.loads(data["choices"][0]["message"]["content"])
-        except Exception:
-            pass
-
     from app.services.image_service import analyze_image_screenshot
     return await analyze_image_screenshot(image_bytes, "screenshot.png", mime_type)
 
 
 async def security_chat(message: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
     """
-    Cybersecurity Coach chat assistant.
-    Provides conversational security education and advice.
+    Cybersecurity Coach chat assistant powered by Groq or OpenAI.
     """
-    if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10:
-        try:
-            messages = [{"role": "system", "content": SYSTEM_COACH_PROMPT}]
-            if history:
-                for h in history[-6:]:
-                    messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
-            messages.append({"role": "user", "content": message})
+    provider = _get_active_ai_provider()
 
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "gpt-4o-mini",
-                        "messages": messages,
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0.4
-                    },
-                    timeout=20.0
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    return json.loads(data["choices"][0]["message"]["content"])
-        except Exception:
-            pass
+    if provider:
+        messages = [{"role": "system", "content": SYSTEM_COACH_PROMPT}]
+        if history:
+            for h in history[-6:]:
+                messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+        messages.append({"role": "user", "content": message})
+
+        for model_name in [provider["text_model"], provider.get("fallback_model")]:
+            if not model_name:
+                continue
+            try:
+                async with httpx.AsyncClient(verify=False) as client:
+                    response = await client.post(
+                        provider["api_url"],
+                        headers={
+                            "Authorization": f"Bearer {provider['api_key']}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model_name,
+                            "messages": messages,
+                            "response_format": {"type": "json_object"},
+                            "temperature": 0.4
+                        },
+                        timeout=20.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        content = data["choices"][0]["message"]["content"]
+                        return json.loads(content)
+            except Exception as e:
+                print(f"Groq coach model {model_name} attempt error: {e}")
 
     # Built-in intelligent cybersecurity coach knowledge base
     return _generate_coach_knowledge_response(message)

@@ -69,6 +69,31 @@ export const deleteReport = async (reportId) => {
   return response.data;
 };
 
+// Advanced Power Tools
+export const auditPassword = async (password) => {
+  const response = await client.post('/tools/password-audit', { password });
+  return response.data;
+};
+
+export const inspectEmailHeader = async (raw_headers) => {
+  const response = await client.post('/tools/email-header', { raw_headers });
+  return response.data;
+};
+
+export const scanQrCode = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await client.post('/tools/qr-scan', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const getThreatRadar = async () => {
+  const response = await client.get('/tools/threat-radar');
+  return response.data;
+};
+
 export default {
   checkHealth,
   analyzeText,
@@ -80,4 +105,8 @@ export default {
   getHistory,
   getReport,
   deleteReport,
+  auditPassword,
+  inspectEmailHeader,
+  scanQrCode,
+  getThreatRadar,
 };

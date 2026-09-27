@@ -2,18 +2,44 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans selection:bg-cyan-500 selection:text-white min-h-screen;
+    @apply transition-colors duration-300 antialiased font-sans min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  body.dark {
+    @apply bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-white;
+  }
+
+  body.light {
+    @apply bg-slate-100 text-slate-900 selection:bg-blue-600 selection:text-white;
   }
 }
 
-/* Custom glow and backdrop effects */
-.cyber-card {
+/* Dark mode card styling */
+body.dark .cyber-card {
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(51, 65, 85, 0.6);
+  color: #f1f5f9;
 }
 
+/* Light mode card styling */
+body.light .cyber-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+body.light .cyber-card h1,
+body.light .cyber-card h2,
+body.light .cyber-card h3,
+body.light .cyber-card h4 {
+  color: #0f172a;
+}
+
+/* Cyber Glows */
 .cyber-glow-critical {
   box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.35);
 }
@@ -28,4 +54,21 @@
 
 .cyber-glow-low {
   box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.35);
+}
+
+/* Print optimizations */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .cyber-card {
+    border: 1px solid #ccc !important;
+    background: white !important;
+    box-shadow: none !important;
+    color: black !important;
+  }
 }

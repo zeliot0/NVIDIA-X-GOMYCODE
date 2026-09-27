@@ -1,5 +1,6 @@
 import io
 from typing import Dict, Any
+import httpx
 from app.config import settings
 from app.services.security_service import analyze_text_security
 
@@ -9,7 +10,7 @@ MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25MB
 
 async def analyze_voice(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
     """
-    Validates audio file, generates transcript via Speech-to-Text (Whisper or audio fallback),
+    Validates audio file, generates transcript via Speech-to-Text (Groq Whisper or OpenAI Whisper),
     and evaluates the transcript for social engineering, voice phishing (vishing),
     and scam call indicators.
     """
@@ -22,10 +23,28 @@ async def analyze_voice(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
 
     transcript = ""
 
-    # Attempt OpenAI Whisper API if key is configured
-    if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10:
+    # 1. Attempt Groq Whisper API (whisper-large-v3-turbo) if configured
+    if settings.GROQ_API_KEY and len(settings.GROQ_API_KEY) > 10 and not settings.GROQ_API_KEY.startswith("your_"):
         try:
-            import httpx
+            async with httpx.AsyncClient() as client:
+                files = {"file": (filename, audio_bytes, f"audio/{ext}")}
+                data = {"model": "whisper-large-v3-turbo"}
+                headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers=headers,
+                    files=files,
+                    data=data,
+                    timeout=30.0
+                )
+                if response.status_code == 200:
+                    transcript = response.json().get("text", "")
+        except Exception as e:
+            print(f"Groq Whisper transcription fallback: {e}")
+
+    # 2. Attempt OpenAI Whisper API if Groq was not used
+    if not transcript and settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10 and not settings.OPENAI_API_KEY.startswith("your_"):
+        try:
             async with httpx.AsyncClient() as client:
                 files = {"file": (filename, audio_bytes, f"audio/{ext}")}
                 data = {"model": "whisper-1"}
@@ -39,12 +58,11 @@ async def analyze_voice(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
                 )
                 if response.status_code == 200:
                     transcript = response.json().get("text", "")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"OpenAI Whisper transcription fallback: {e}")
 
-    # High-quality fallback for demonstration or offline operation
+    # 3. High-quality demonstration fallback for offline operation
     if not transcript:
-        # If user uploaded a sample audio or test recording, provide contextual interpretation
         transcript = (
             "Hello, this is security department calling regarding your bank account. "
             "We have detected unauthorized transactions. Please provide the one-time verification "

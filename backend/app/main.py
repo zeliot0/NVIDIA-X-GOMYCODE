@@ -11,6 +11,7 @@ from app.api.voice_analysis import router as voice_router
 from app.api.document_analysis import router as document_router
 from app.api.chat import router as chat_router
 from app.api.reports import router as reports_router
+from app.api.tools import router as tools_router
 
 
 @asynccontextmanager
@@ -50,6 +51,7 @@ app.include_router(voice_router)
 app.include_router(document_router)
 app.include_router(chat_router)
 app.include_router(reports_router)
+app.include_router(tools_router)
 
 
 @app.get("/")
