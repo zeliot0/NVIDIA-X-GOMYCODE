@@ -30,6 +30,7 @@ import SocThreatMap from '../components/SocThreatMap';
 import MitreMatrixGrid from '../components/MitreMatrixGrid';
 import SocTimelineGraph from '../components/SocTimelineGraph';
 import SocAlertFeed from '../components/SocAlertFeed';
+import SocAttackDistribution from '../components/SocAttackDistribution';
 
 export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, setToolTab }) {
   const [history, setHistory] = useState([]);
@@ -198,6 +199,9 @@ export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, s
 
       {/* Interactive SIEM Telemetry Curve Graph */}
       <SocTimelineGraph />
+
+      {/* Professional Vector Distribution Donut & Lockheed Martin Kill Chain */}
+      <SocAttackDistribution />
 
       {/* Interactive Global Threat Map & Adversary Dossier */}
       <SocThreatMap />

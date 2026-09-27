@@ -169,7 +169,25 @@ Return ONLY strict JSON matching this schema:
 
 
 def _get_active_ai_provider():
-    """Detect whether Groq or OpenAI credentials are active."""
+    """Detect active AI provider. Priority: Ollama (NVIDIA L40S GPU) > Groq > OpenAI."""
+    # 1. NVIDIA Brev L40S GPU via Ollama (highest priority — local GPU, fast Mistral-Nemo 12B)
+    ollama_url = getattr(settings, "OLLAMA_BASE_URL", None) or "http://localhost:11434"
+    ollama_model = getattr(settings, "OLLAMA_MODEL", None) or "mistral-nemo"
+    try:
+        import urllib.request
+        req = urllib.request.urlopen(f"{ollama_url}/api/tags", timeout=2)
+        if req.status == 200:
+            return {
+                "name": "ollama",
+                "api_url": f"{ollama_url}/v1/chat/completions",
+                "api_key": "ollama",
+                "text_model": ollama_model,
+                "fallback_model": "llama3.1:8b",
+            }
+    except Exception:
+        pass  # GPU not reachable, fall through to cloud providers
+
+    # 2. Groq (fast cloud fallback)
     if settings.GROQ_API_KEY and len(settings.GROQ_API_KEY) > 10 and not settings.GROQ_API_KEY.startswith("your_"):
         return {
             "name": "groq",
@@ -178,6 +196,8 @@ def _get_active_ai_provider():
             "text_model": "openai/gpt-oss-20b",
             "fallback_model": "qwen/qwen3.8-27b",
         }
+
+    # 3. OpenAI (final fallback)
     if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10 and not settings.OPENAI_API_KEY.startswith("your_"):
         return {
             "name": "openai",

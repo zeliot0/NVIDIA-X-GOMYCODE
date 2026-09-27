@@ -9,7 +9,7 @@ import Radar from './pages/Radar';
 import History from './pages/History';
 import Report from './pages/Report';
 import Coach from './pages/Coach';
-import { Shield } from 'lucide-react';
+import FalconLogo from './components/FalconLogo';
 
 export default function App() {
   const [activePage, setActivePage] = useState('home');
@@ -84,11 +84,9 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-700/40 py-8 no-print transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white">
-              <Shield className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-sm font-bold tracking-tight">SAFE<span className="text-cyan-400">AI</span></span>
+          <div className="flex items-center space-x-2.5">
+            <FalconLogo className="w-6 h-6" glow={false} />
+            <span className="text-sm font-bold tracking-tight text-white">SAFE<span className="text-emerald-400">AI</span></span>
             <span className="text-xs opacity-60">• Enterprise-Grade Personal Defense</span>
           </div>
 

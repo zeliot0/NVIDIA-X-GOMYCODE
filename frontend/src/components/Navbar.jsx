@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { checkHealth } from '../services/api';
+import FalconLogo from './FalconLogo';
 
 export default function Navbar({ activePage, setActivePage, darkMode, setDarkMode }) {
   const [isBackendHealthy, setIsBackendHealthy] = useState(false);
@@ -58,17 +59,17 @@ export default function Navbar({ activePage, setActivePage, darkMode, setDarkMod
           onClick={() => handleNavClick('home')}
           className="flex items-center space-x-3 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-            <Shield className="w-5 h-5" />
-          </div>
+          <FalconLogo className="w-11 h-11 transition-transform group-hover:scale-105" />
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-xl tracking-tight">SAFE<span className="text-cyan-400">AI</span></span>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+              <span className="font-extrabold text-xl tracking-tight text-white">
+                SAFE<span className="text-emerald-400">AI</span>
+              </span>
+              <span className="text-[9px] font-mono uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                 PRO
               </span>
             </div>
-            <p className="text-[10px] opacity-60 font-medium hidden sm:block">Personal Cybersecurity Assistant</p>
+            <p className="text-[10px] opacity-60 font-mono tracking-tight hidden sm:block">Proactive Threat Intelligence</p>
           </div>
         </div>
 
@@ -83,11 +84,11 @@ export default function Navbar({ activePage, setActivePage, darkMode, setDarkMod
                 onClick={() => handleNavClick(item.id)}
                 className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-sm'
-                    : 'opacity-70 hover:opacity-100 hover:bg-slate-800/40'
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                    : 'opacity-70 hover:opacity-100 hover:bg-zinc-800/40'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'opacity-70'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'opacity-70'}`} />
                 <span>{item.label}</span>
               </button>
             );
@@ -100,13 +101,13 @@ export default function Navbar({ activePage, setActivePage, darkMode, setDarkMod
           <button
             onClick={() => setDarkMode(!darkMode)}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 rounded-xl border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 transition-all text-slate-300 hover:text-white"
+            className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 transition-all text-zinc-300 hover:text-white"
           >
-            {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-500" />}
+            {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-emerald-400" />}
           </button>
 
           {/* Backend Status Badge */}
-          <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs border border-slate-700/60 bg-slate-800/40">
+          <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs border border-zinc-800 bg-zinc-900/60">
             <span className={`w-2 h-2 rounded-full ${isBackendHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
             <span className="text-[11px] opacity-75 font-mono">{isBackendHealthy ? 'AI Live' : 'Offline'}</span>
           </div>
@@ -114,7 +115,7 @@ export default function Navbar({ activePage, setActivePage, darkMode, setDarkMod
           {/* Quick Scan CTA */}
           <button
             onClick={() => handleNavClick('analyze')}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/25 hover:opacity-90 transition-opacity"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-mono shadow-md shadow-emerald-500/25 hover:opacity-90 transition-opacity"
           >
             <Search className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Scan Threat</span>

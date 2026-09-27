@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield, MessageSquare, Globe, Image as ImageIcon, FileText, Mic, ArrowRight, Zap, CheckCircle2, Lock, Eye, AlertTriangle } from 'lucide-react';
+import FalconLogo from '../components/FalconLogo';
 
 export default function Home({ setActivePage, setAnalyzeTab }) {
   const handleStartAnalysis = (tab) => {
@@ -28,8 +29,13 @@ export default function Home({ setActivePage, setAnalyzeTab }) {
     <div className="space-y-16 py-8">
       {/* Hero Section */}
       <section className="text-center space-y-6 max-w-4xl mx-auto px-4">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-800/80 text-cyan-300 text-xs font-semibold shadow-inner">
-          <Zap className="w-3.5 h-3.5 text-cyan-400" />
+        {/* Falcon Predator Emblem */}
+        <div className="flex justify-center mb-2">
+          <FalconLogo className="w-20 h-20 hover:scale-110 transition-transform cursor-pointer" />
+        </div>
+
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-950/70 border border-emerald-800/60 text-emerald-400 text-xs font-semibold shadow-inner">
+          <Zap className="w-3.5 h-3.5 text-emerald-400" />
           <span>Next-Generation AI Cybersecurity for Everyday Users</span>
         </div>
 
