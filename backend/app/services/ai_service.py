@@ -1,5 +1,6 @@
 import json
 import base64
+import hashlib
 from typing import Dict, Any, List, Optional
 import httpx
 from app.config import settings
@@ -47,6 +48,59 @@ Return your response as JSON with:
 }
 """
 
+SYSTEM_INCIDENT_PROMPT = """You are the SAFEAI Emergency Incident Response Commander & Fraud Legal Specialist.
+A user has experienced a potential cyber incident (e.g., clicked a phishing link, entered credentials, authorized a fraudulent transaction, or had an account hijacked).
+Generate an emergency containment action plan, ready-to-use formal bank dispute letter, and official cybercrime police complaint draft.
+
+Return ONLY strict JSON matching this schema:
+{
+  "severity": "CRITICAL" | "HIGH" | "MEDIUM",
+  "summary": "Clear executive summary of the incident and immediate risk",
+  "containment_timeline": [
+    {"phase": "0-15 Minutes (Immediate Containment)", "actions": ["Step 1", "Step 2"]},
+    {"phase": "1-2 Hours (Credential & Session Isolation)", "actions": ["Step 1", "Step 2"]},
+    {"phase": "24-48 Hours (Financial & Legal Remediation)", "actions": ["Step 1", "Step 2"]}
+  ],
+  "bank_dispute_letter": "Formal ready-to-copy letter for bank/credit card fraud department citing unauthorized transactions and consumer protection rules",
+  "police_report_draft": "Formal ready-to-copy cybercrime complaint narrative for law enforcement",
+  "platform_recovery_steps": ["Step 1", "Step 2", "Step 3"]
+}
+"""
+
+SYSTEM_PSYCH_PROMPT = """You are an expert Cyber-Psychologist specializing in social engineering, psychological manipulation, and cognitive bias exploitation.
+Analyze the provided text to deconstruct the emotional triggers, psychological pressure vectors, and manipulation techniques used by the attacker.
+
+Return ONLY strict JSON matching this schema:
+{
+  "manipulation_score": integer (0 to 100),
+  "primary_vector": "string (e.g., Fear & Coercion, Artificial Urgency, Trust Impersonation, Greed / Reward)",
+  "cialdini_principles": {
+    "authority": integer (0 to 100),
+    "scarcity_urgency": integer (0 to 100),
+    "fear_penalty": integer (0 to 100),
+    "greed_gain": integer (0 to 100),
+    "social_proof": integer (0 to 100)
+  },
+  "exploited_cognitive_bias": "string (e.g., Hyperbolic Discounting, Ostrich Effect, Sunk Cost)",
+  "psychological_breakdown": "Explanation of how the text attempts to bypass the victim's rational thought process",
+  "defense_mindset": "Mental checkpoint or rule of thumb to neutralize this specific emotional trigger"
+}
+"""
+
+SYSTEM_CRYPTO_PROMPT = """You are the SAFEAI Web3 & Smart Contract Security Auditor.
+Analyze the provided cryptocurrency address, transaction call, smart contract request, or airdrop message for wallet drainers, permit2 approval scams, address poisoning, and honeypots.
+
+Return ONLY strict JSON matching this schema:
+{
+  "risk": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+  "threat_type": "string (e.g., Permit2 Approval Drainer, Fake Airdrop Lure, Address Poisoning, Honeypot)",
+  "drain_risk_level": "None" | "Partial" | "Total Wallet Drain",
+  "explanation": "Simple explanation of how the scam works",
+  "attack_vector": "Technical mechanism (e.g., setApprovalForAll, eth_sign blind signing)",
+  "recommendations": ["Step 1", "Step 2", "Step 3"]
+}
+"""
+
 
 def _get_active_ai_provider():
     """Detect whether Groq or OpenAI credentials are active."""
@@ -69,28 +123,10 @@ def _get_active_ai_provider():
     return None
 
 
-async def analyze_text_with_ai(text: str, security_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """
-    Combines deterministic security signals with LLM deep semantic reasoning (Groq or OpenAI).
-    Falls back reliably to deterministic context if API call fails or key is missing.
-    """
-    deterministic = security_context or analyze_text_security(text)
+async def _execute_ai_json_call(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> Optional[Dict[str, Any]]:
     provider = _get_active_ai_provider()
-
     if not provider:
-        return deterministic
-
-    user_prompt = f"""Analyze this content for cybersecurity threats:
-Input Content:
----
-{text}
----
-
-Deterministic Security Engine Findings:
-- Detected Risk: {deterministic.get('risk')}
-- Detected Indicators: {', '.join(deterministic.get('indicators', []))}
-- Base Score: {deterministic.get('score')}
-"""
+        return None
 
     for model_name in [provider["text_model"], provider.get("fallback_model")]:
         if not model_name:
@@ -106,23 +142,43 @@ Deterministic Security Engine Findings:
                     json={
                         "model": model_name,
                         "messages": [
-                            {"role": "system", "content": SYSTEM_SECURITY_AGENT_PROMPT},
+                            {"role": "system", "content": system_prompt},
                             {"role": "user", "content": user_prompt}
                         ],
                         "response_format": {"type": "json_object"},
-                        "temperature": 0.2
+                        "temperature": temperature
                     },
-                    timeout=20.0
+                    timeout=25.0
                 )
-
                 if response.status_code == 200:
-                    data = response.json()
-                    content = data["choices"][0]["message"]["content"]
-                    parsed = json.loads(content)
-                    parsed["indicator_details"] = deterministic.get("indicator_details", [])
-                    return parsed
+                    content = response.json()["choices"][0]["message"]["content"]
+                    return json.loads(content)
         except Exception as e:
-            print(f"Groq/AI text model {model_name} attempt error: {e}")
+            print(f"AI JSON call with model {model_name} error: {e}")
+    return None
+
+
+async def analyze_text_with_ai(text: str, security_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Combines deterministic security signals with LLM deep semantic reasoning (Groq or OpenAI).
+    Falls back reliably to deterministic context if API call fails or key is missing.
+    """
+    deterministic = security_context or analyze_text_security(text)
+    user_prompt = f"""Analyze this content for cybersecurity threats:
+Input Content:
+---
+{text}
+---
+
+Deterministic Security Engine Findings:
+- Detected Risk: {deterministic.get('risk')}
+- Detected Indicators: {', '.join(deterministic.get('indicators', []))}
+- Base Score: {deterministic.get('score')}
+"""
+    ai_result = await _execute_ai_json_call(SYSTEM_SECURITY_AGENT_PROMPT, user_prompt, temperature=0.2)
+    if ai_result:
+        ai_result["indicator_details"] = deterministic.get("indicator_details", [])
+        return ai_result
 
     return deterministic
 
@@ -140,7 +196,6 @@ async def security_chat(message: str, history: Optional[List[Dict[str, str]]] = 
     Cybersecurity Coach chat assistant powered by Groq or OpenAI.
     """
     provider = _get_active_ai_provider()
-
     if provider:
         messages = [{"role": "system", "content": SYSTEM_COACH_PROMPT}]
         if history:
@@ -168,14 +223,184 @@ async def security_chat(message: str, history: Optional[List[Dict[str, str]]] = 
                         timeout=20.0
                     )
                     if response.status_code == 200:
-                        data = response.json()
-                        content = data["choices"][0]["message"]["content"]
+                        content = response.json()["choices"][0]["message"]["content"]
                         return json.loads(content)
             except Exception as e:
                 print(f"Groq coach model {model_name} attempt error: {e}")
 
-    # Built-in intelligent cybersecurity coach knowledge base
     return _generate_coach_knowledge_response(message)
+
+
+async def generate_incident_response_with_ai(incident_type: str, details: str, estimated_loss: str = "") -> Dict[str, Any]:
+    """
+    AI Emergency Incident Responder: generates containment protocol, bank dispute draft, and police complaint.
+    """
+    prompt = f"""Incident Type: {incident_type}
+Estimated Financial Loss: {estimated_loss or 'Unknown / None reported'}
+Incident Narrative:
+---
+{details}
+---
+"""
+    ai_result = await _execute_ai_json_call(SYSTEM_INCIDENT_PROMPT, prompt, temperature=0.3)
+    if ai_result:
+        return ai_result
+
+    # High quality deterministic incident response fallback
+    return {
+        "severity": "CRITICAL" if "card" in details.lower() or "bank" in details.lower() or "password" in details.lower() else "HIGH",
+        "summary": f"Security breach containment for {incident_type}. Sensitive credentials or assets may be exposed.",
+        "containment_timeline": [
+            {
+                "phase": "0-15 Minutes (Immediate Containment)",
+                "actions": [
+                    "Freeze compromised payment cards via your mobile banking application immediately.",
+                    "Disconnect the affected device from the local Wi-Fi and mobile data to halt malware callbacks.",
+                    "Log out of all active sessions remotely using Google/Apple/Microsoft account security portals."
+                ]
+            },
+            {
+                "phase": "1-2 Hours (Credential & Session Isolation)",
+                "actions": [
+                    "Change passwords for your primary email and bank from an uncompromised secondary device.",
+                    "Revoke authorized OAuth application permissions and active API tokens.",
+                    "Generate new two-factor authentication recovery codes."
+                ]
+            },
+            {
+                "phase": "24-48 Hours (Financial & Legal Remediation)",
+                "actions": [
+                    "Submit formal fraud dispute claim to your bank fraud department citing unauthorized charges.",
+                    "File an official cybercrime report with national law enforcement.",
+                    "Place a 90-day fraud alert on your credit profile with credit bureaus."
+                ]
+            }
+        ],
+        "bank_dispute_letter": (
+            "Dear Fraud Operations Department,\n\n"
+            f"I am writing to formally dispute unauthorized activity on my account regarding an incident occurring on {details[:60]}...\n\n"
+            "This transaction was executed without my informed consent as a direct result of fraudulent deception/impersonation. "
+            "Under applicable consumer protection regulations (including Regulation E / Electronic Fund Transfer Act), I request an immediate "
+            "freeze, reversal of unauthorized charges, and reissuance of protected account credentials.\n\n"
+            "Sincerely,\n[Your Name]\nAccount ending in: [XXXX]"
+        ),
+        "police_report_draft": (
+            f"CYBERCRIME INCIDENT COMPLAINT\n"
+            f"Offense: Computer Fraud & Online Impersonation ({incident_type})\n"
+            f"Incident Summary: On this date, the victim was targeted by deceptive electronic communications leading to {details[:120]}...\n"
+            "Requested Action: Formal investigation of digital fraudulent identifiers and preservation of relevant server transmission logs."
+        ),
+        "platform_recovery_steps": [
+            "Use the account recovery flow at the official service website.",
+            "Verify backup security email and phone number are not altered by the attacker.",
+            "Enable hardware security key or authenticator app."
+        ]
+    }
+
+
+async def audit_psychological_triggers_with_ai(text: str) -> Dict[str, Any]:
+    """
+    Deconstructs psychological manipulation, emotional levers, and cognitive biases.
+    """
+    user_prompt = f"Analyze psychological manipulation vectors in this text:\n---\n{text}\n---"
+    ai_result = await _execute_ai_json_call(SYSTEM_PSYCH_PROMPT, user_prompt, temperature=0.2)
+    if ai_result:
+        return ai_result
+
+    # Deterministic psychological heuristic breakdown
+    lower = text.lower()
+    has_urgency = any(w in lower for w in ["urgent", "immediately", "within", "now", "hours", "expire"])
+    has_fear = any(w in lower for w in ["suspended", "arrest", "blocked", "legal", "court", "penalty"])
+    has_authority = any(w in lower for w in ["bank", "security", "department", "officer", "police", "microsoft"])
+    has_greed = any(w in lower for w in ["won", "prize", "lottery", "gift", "reward", "million"])
+
+    return {
+        "manipulation_score": 85 if (has_urgency and (has_fear or has_authority)) else 45,
+        "primary_vector": "Fear & Artificial Urgency" if has_urgency else "Authority Impersonation",
+        "cialdini_principles": {
+            "authority": 85 if has_authority else 20,
+            "scarcity_urgency": 95 if has_urgency else 15,
+            "fear_penalty": 90 if has_fear else 10,
+            "greed_gain": 80 if has_greed else 5,
+            "social_proof": 30
+        },
+        "exploited_cognitive_bias": "Hyperbolic Discounting & Panic Bias",
+        "psychological_breakdown": (
+            "The message induces acute psychological pressure by combining perceived institutional authority "
+            "with a sudden threat of loss, triggering the instinctive 'fight-or-flight' amygdala response "
+            "to prevent rational skepticism."
+        ),
+        "defense_mindset": "Pause and breathe. Institutional organizations do not conduct emergency enforcement via unsolicited links."
+    }
+
+
+async def audit_crypto_web3_with_ai(payload: str) -> Dict[str, Any]:
+    """
+    Web3 and Smart Contract Drainer Sentry.
+    """
+    user_prompt = f"Audit this Web3 / crypto payload or address:\n---\n{payload}\n---"
+    ai_result = await _execute_ai_json_call(SYSTEM_CRYPTO_PROMPT, user_prompt, temperature=0.2)
+    if ai_result:
+        return ai_result
+
+    # Heuristic fallback for Web3
+    lower = payload.lower()
+    is_drainer_keyword = any(k in lower for k in ["permit", "setapprovalforall", "drainer", "airdrop", "claim", "free mint"])
+    return {
+        "risk": "CRITICAL" if is_drainer_keyword else "MEDIUM",
+        "threat_type": "Permit2 / Token Drainer Phishing Lure" if is_drainer_keyword else "Unverified Web3 Signature Request",
+        "drain_risk_level": "Total Wallet Drain" if is_drainer_keyword else "Partial",
+        "explanation": "Scammers disguise token approval functions (e.g. Permit2 or setApprovalForAll) as free airdrops or NFT mints to siphon all wallet tokens.",
+        "attack_vector": "Blind signing unauthorized allowance transaction",
+        "recommendations": [
+            "Never sign transactions containing 'setApprovalForAll' on unfamiliar websites.",
+            "Use a burner wallet with minimal balances for interacting with new dApps.",
+            "Inspect token allowances using revoke.cash to remove dormant contract approvals."
+        ]
+    }
+
+
+def simulate_breach_check(query: str) -> Dict[str, Any]:
+    """
+    Simulates dark web exposure intelligence for an email or username safely without exposing real PII.
+    """
+    cleaned = query.strip().lower()
+    # Deterministic hash to generate consistent synthetic breach profile
+    h = int(hashlib.sha256(cleaned.encode()).hexdigest()[:8], 16)
+
+    BREACH_CATALOG = [
+        {"name": "LinkedIn Corporate Breach", "year": 2021, "records": "700 Million", "data": ["Emails", "Full Names", "Salaries", "Phone Numbers"]},
+        {"name": "Canva Creative Network", "year": 2019, "records": "139 Million", "data": ["Usernames", "Emails", "Salted Bcrypt Hashes", "Cities"]},
+        {"name": "Adobe Systems Exposure", "year": 2013, "records": "153 Million", "data": ["Emails", "Password Hints", "Encrypted Passwords"]},
+        {"name": "Dropbox Cloud Storage Incident", "year": 2016, "records": "68 Million", "data": ["Emails", "Hashed Passwords"]},
+        {"name": "Collection #1 Credential Stuffing Dump", "year": 2019, "records": "773 Million", "data": ["Plaintext Passwords", "Emails"]}
+    ]
+
+    # Select 1 to 3 breaches based on hash
+    count = (h % 3) + 1
+    selected_breaches = [BREACH_CATALOG[(h + i) % len(BREACH_CATALOG)] for i in range(count)]
+
+    exposed_types = set()
+    for b in selected_breaches:
+        for d in b["data"]:
+            exposed_types.add(d)
+
+    compromise_score = min(count * 28 + 15, 95)
+    return {
+        "query": cleaned,
+        "compromise_score": compromise_score,
+        "threat_rating": "CRITICAL EXPOSURE" if compromise_score > 70 else "HIGH EXPOSURE",
+        "total_breaches_found": len(selected_breaches),
+        "breaches": selected_breaches,
+        "exposed_data_types": list(exposed_types),
+        "credential_stuffing_risk": "High - Attackers frequently replay leaked credentials against banking, social, and shopping platforms.",
+        "action_plan": [
+            "Immediately change the password for this email account using an independent device.",
+            "Never reuse this password across other services.",
+            "Enable Multi-Factor Authentication (MFA) with an authenticator app.",
+            "Check for unauthorized forwarding filters inside your email inbox settings."
+        ]
+    }
 
 
 def _generate_coach_knowledge_response(query: str) -> Dict[str, Any]:

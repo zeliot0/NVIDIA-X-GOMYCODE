@@ -15,12 +15,15 @@ import {
   Swords,
   Radio,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Siren,
+  Coins,
+  Brain
 } from 'lucide-react';
 import { getHistory } from '../services/api';
 import RiskBadge from '../components/RiskBadge';
 
-export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab }) {
+export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab, setToolTab }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -226,10 +229,62 @@ export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab })
             </h3>
             <div className="space-y-2">
               <button
-                onClick={() => setActivePage('tools')}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3"
+                onClick={() => { if (setToolTab) setToolTab('incident'); setActivePage('tools'); }}
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-rose-950/30 text-left border border-slate-800 hover:border-rose-800/60 transition-all flex items-center space-x-3 group"
               >
-                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400">
+                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
+                  <Siren className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">Incident Commander</span>
+                  <span className="text-[11px] opacity-60">Bank dispute & police legal draft</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { if (setToolTab) setToolTab('breach'); setActivePage('tools'); }}
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800/60 transition-all flex items-center space-x-3 group"
+              >
+                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
+                  <Search className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">Dark Web Breach Radar</span>
+                  <span className="text-[11px] opacity-60">Compromised identity & stuffing</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { if (setToolTab) setToolTab('crypto'); setActivePage('tools'); }}
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-amber-950/30 text-left border border-slate-800 hover:border-amber-800/60 transition-all flex items-center space-x-3 group"
+              >
+                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 group-hover:scale-105 transition-transform">
+                  <Coins className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">Web3 & Crypto Audit</span>
+                  <span className="text-[11px] opacity-60">Permit2 drainer & smart contract</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { if (setToolTab) setToolTab('psych'); setActivePage('tools'); }}
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-purple-950/30 text-left border border-slate-800 hover:border-purple-800/60 transition-all flex items-center space-x-3 group"
+              >
+                <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400 group-hover:scale-105 transition-transform">
+                  <Brain className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">Psychology Radar</span>
+                  <span className="text-[11px] opacity-60">Cialdini persuasion spectrum</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => { if (setToolTab) setToolTab('password'); setActivePage('tools'); }}
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3 group"
+              >
+                <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
@@ -239,41 +294,15 @@ export default function Dashboard({ setActivePage, setReportId, setAnalyzeTab })
               </button>
 
               <button
-                onClick={() => setActivePage('tools')}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3"
-              >
-                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Header Sentry</span>
-                  <span className="text-[11px] opacity-60">SPF/DKIM email spoof check</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActivePage('tools')}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3"
-              >
-                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
-                  <QrCode className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">Quishing Scanner</span>
-                  <span className="text-[11px] opacity-60">QR code phishing inspector</span>
-                </div>
-              </button>
-
-              <button
                 onClick={() => setActivePage('radar')}
-                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-cyan-950/40 text-left border border-slate-800 hover:border-cyan-800 transition-all flex items-center space-x-3"
+                className="w-full p-3 rounded-xl bg-slate-900/60 hover:bg-rose-950/40 text-left border border-slate-800 hover:border-rose-800 transition-all flex items-center space-x-3 group"
               >
-                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400">
+                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
                   <Radio className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold block">Threat Radar</span>
-                  <span className="text-[11px] opacity-60">Trending scams & AI voice clones</span>
+                  <span className="text-xs font-bold block">Live Threat Radar</span>
+                  <span className="text-[11px] opacity-60">Active fraud campaigns & voice clones</span>
                 </div>
               </button>
             </div>

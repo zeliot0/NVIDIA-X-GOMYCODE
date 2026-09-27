@@ -4,8 +4,10 @@ import RiskBadge from './RiskBadge';
 import RiskScore from './RiskScore';
 import IndicatorList from './IndicatorList';
 import ProtectionPlan from './ProtectionPlan';
+import AudioVoiceBriefing from './AudioVoiceBriefing';
+import PsychProfileCard from './PsychProfileCard';
 
-export default function AnalysisCard({ analysis, inputType = 'message', recordId }) {
+export default function AnalysisCard({ analysis, inputType = 'message', recordId, sourceText = '' }) {
   const [copied, setCopied] = useState(false);
 
   if (!analysis) return null;
@@ -93,6 +95,9 @@ Analyzed safely by SAFEAI (Personal Cybersecurity Assistant)`;
         </button>
       </div>
 
+      {/* AI Voice Briefing */}
+      <AudioVoiceBriefing analysis={analysis} inputType={inputType} />
+
       {/* Risk Score Meter */}
       <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
         <RiskScore score={score} risk={risk} />
@@ -135,6 +140,12 @@ Analyzed safely by SAFEAI (Personal Cybersecurity Assistant)`;
           </p>
         </div>
       </div>
+
+      {/* Psychological Profiling Breakdown */}
+      <PsychProfileCard
+        text={sourceText || transcript || explanation}
+        initialProfile={analysis.psych_profile}
+      />
 
       {/* Indicators */}
       <div className="space-y-2">

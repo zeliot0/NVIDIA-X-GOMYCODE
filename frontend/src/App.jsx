@@ -14,6 +14,7 @@ import { Shield } from 'lucide-react';
 export default function App() {
   const [activePage, setActivePage] = useState('home');
   const [analyzeTab, setAnalyzeTab] = useState('text');
+  const [toolTab, setToolTab] = useState('incident');
   const [reportId, setReportId] = useState(null);
 
   // Dark & Light Mode state (persisted)
@@ -43,12 +44,13 @@ export default function App() {
             setActivePage={setActivePage}
             setReportId={setReportId}
             setAnalyzeTab={setAnalyzeTab}
+            setToolTab={setToolTab}
           />
         );
       case 'analyze':
         return <Analyze initialTab={analyzeTab} />;
       case 'tools':
-        return <Tools darkMode={darkMode} />;
+        return <Tools darkMode={darkMode} initialTool={toolTab} />;
       case 'arena':
         return <Arena />;
       case 'radar':

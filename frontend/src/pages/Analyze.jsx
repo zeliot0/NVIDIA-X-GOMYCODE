@@ -403,6 +403,7 @@ export default function Analyze({ initialTab = 'text' }) {
             analysis={result.analysis}
             inputType={result.input_type || activeTab}
             recordId={result.record_id}
+            sourceText={textInput || result.source_preview || ''}
           />
         </div>
       )}

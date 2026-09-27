@@ -94,6 +94,27 @@ export const getThreatRadar = async () => {
   return response.data;
 };
 
+// Beast AI Modules
+export const generateIncidentResponse = async (incident_type, details, estimated_loss = "") => {
+  const response = await client.post('/tools/incident-response', { incident_type, details, estimated_loss });
+  return response.data;
+};
+
+export const auditPsychProfile = async (text) => {
+  const response = await client.post('/tools/psych-profile', { text });
+  return response.data;
+};
+
+export const checkBreach = async (query) => {
+  const response = await client.post('/tools/breach-check', { query });
+  return response.data;
+};
+
+export const auditCrypto = async (payload) => {
+  const response = await client.post('/tools/crypto-audit', { payload });
+  return response.data;
+};
+
 export default {
   checkHealth,
   analyzeText,
@@ -109,4 +130,8 @@ export default {
   inspectEmailHeader,
   scanQrCode,
   getThreatRadar,
+  generateIncidentResponse,
+  auditPsychProfile,
+  checkBreach,
+  auditCrypto,
 };
